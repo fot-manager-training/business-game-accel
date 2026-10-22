@@ -1,6 +1,6 @@
 @font-face {
   font-family: Manrope;
-  src: url("/manrope.ttf") format("truetype");
+  src: url("./assets/manrope.ttf") format("truetype");
   font-weight: 200 800;
   font-style: normal;
   font-display: swap;
@@ -3244,5 +3244,49 @@ footer button {
     background: #050c09a8;
     backdrop-filter: blur(3px);
     z-index: 19;
+  }
+}
+
+.demo-notice {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 10px;
+  color: #8da57f;
+  padding: 13px 16px;
+  margin: -7px 0 23px;
+  border: 1px solid #b7f28a20;
+  border-radius: 7px;
+  background: #b7f28a05;
+}
+.demo-notice > svg {
+  color: #b7f28a;
+}
+.demo-notice strong {
+  font-weight: 550;
+  color: #bbd5a4;
+  white-space: nowrap;
+}
+.demo-notice button {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+  font-size: 9px;
+  color: #a7be94;
+  padding: 0;
+}
+@media (max-width: 760px) {
+  .demo-notice {
+    flex-wrap: wrap;
+    gap: 8px;
+    font-size: 9px;
+    line-height: 1.8;
+  }
+  .demo-notice span {
+    order: 4;
+    width: 100%;
+    font-size: 8px;
   }
 }

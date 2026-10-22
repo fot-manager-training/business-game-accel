@@ -46,6 +46,7 @@ import {
   SlidersHorizontal,
 } from "lucide-react";
 import "./styles.css";
+import { workshopClient, isLocalDemo } from "./workshop-client.js";
 const money = (n) => new Intl.NumberFormat("ru-RU").format(Math.round(n));
 const rub = (n) => `${money(n)} ₽`;
 const profit = (t) => t.revenue - t.expenses;
@@ -416,15 +417,10 @@ function App() {
     [guide, setGuide] = useState(false),
     [now, setNow] = useState(Date.now());
   useEffect(() => {
-    const events = new EventSource("/api/events");
-    events.onmessage = (e) => {
-      setState(JSON.parse(e.data));
-      setConnected(true);
-    };
-    events.onerror = () => setConnected(false);
+    const unsubscribe = workshopClient.subscribe(setState, setConnected);
     const timer = setInterval(() => setNow(Date.now()), 1000);
     return () => {
-      events.close();
+      unsubscribe();
       clearInterval(timer);
     };
   }, []);
@@ -481,13 +477,7 @@ function App() {
   async function action(a, success) {
     setBusy(true);
     try {
-      const r = await fetch("/api/action", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ team: selected, ...a }),
-      });
-      const data = await r.json();
-      if (!r.ok) throw Error(data.error);
+      await workshopClient.action({ team: selected, ...a });
       if (success) setToast(success);
       return true;
     } catch (e) {
@@ -500,12 +490,7 @@ function App() {
   async function reset() {
     setBusy(true);
     try {
-      const r = await fetch("/api/reset", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ duration }),
-      });
-      if (!r.ok) throw Error("Не удалось создать сессию");
+      await workshopClient.reset(duration);
       setModal(null);
       setToast(
         "Новая сессия создана. Нажмите «Продолжить», когда команды будут готовы.",
@@ -667,11 +652,23 @@ function App() {
         </nav>
         <div className="sidebar-divider" />
         <div className="nav-caption">ВОРКШОП</div>
-        <button className="nav-item" onClick={() => setModal("settings")}>
+        <button
+          className="nav-item"
+          onClick={() => {
+            setModal("settings");
+            setMobile(false);
+          }}
+        >
           <Settings2 size={18} />
           <span>Настройки сессии</span>
         </button>
-        <button className="nav-item" onClick={() => setGuide(true)}>
+        <button
+          className="nav-item"
+          onClick={() => {
+            setGuide(true);
+            setMobile(false);
+          }}
+        >
           <BookOpen size={18} />
           <span>Как это работает</span>
           <ArrowUpRight size={14} />
@@ -689,7 +686,12 @@ function App() {
               <br />
               Агенты создают результат.
             </p>
-            <button onClick={() => setGuide(true)}>
+            <button
+              onClick={() => {
+                setGuide(true);
+                setMobile(false);
+              }}
+            >
               Исследовать концепцию <ArrowUpRight size={14} />
             </button>
           </div>
@@ -701,7 +703,10 @@ function App() {
             </div>
             <button
               aria-label="Настройки организатора"
-              onClick={() => setModal("settings")}
+              onClick={() => {
+                setModal("settings");
+                setMobile(false);
+              }}
             >
               <MoreHorizontal size={18} />
             </button>
@@ -734,12 +739,19 @@ function App() {
           <div className="topbar-right">
             <span className={`connection ${connected ? "" : "offline"}`}>
               <i />
-              {connected ? "Все системы в норме" : "Переподключение…"}
+              {connected
+                ? isLocalDemo
+                  ? "Демо в вашем браузере"
+                  : "Все системы в норме"
+                : "Переподключение…"}
             </span>
             <span className="topbar-divider" />
             <button
               className="help-button"
-              onClick={() => setGuide(true)}
+              onClick={() => {
+                setGuide(true);
+                setMobile(false);
+              }}
               aria-label="Помощь"
             >
               ?
@@ -784,7 +796,10 @@ function App() {
             </div>
             <button
               className="button subtle session-label"
-              onClick={() => setModal("settings")}
+              onClick={() => {
+                setModal("settings");
+                setMobile(false);
+              }}
             >
               <span className="live-dot" />
               {state.status === "running"
@@ -795,6 +810,24 @@ function App() {
               <ChevronDown size={14} />
             </button>
           </div>
+          {isLocalDemo && (
+            <div className="demo-notice">
+              <Globe size={15} />
+              <strong>Публичное демо</strong>
+              <span>
+                У каждого посетителя своя игра. Прогресс сохраняется в этой
+                вкладке.
+              </span>
+              <button
+                onClick={() => {
+                  setGuide(true);
+                  setMobile(false);
+                }}
+              >
+                Как играть <ArrowUpRight size={13} />
+              </button>
+            </div>
+          )}
           {page === "overview" && (
             <>
               <section className="metrics">
@@ -1144,7 +1177,10 @@ function App() {
                 </span>
                 <button
                   className="button subtle"
-                  onClick={() => setGuide(true)}
+                  onClick={() => {
+                    setGuide(true);
+                    setMobile(false);
+                  }}
                 >
                   <BookOpen size={15} /> Правила игры
                 </button>
@@ -1186,7 +1222,7 @@ function App() {
                 </div>
                 <button
                   className="button"
-                  onClick={() => window.location.assign("/api/export")}
+                  onClick={() => workshopClient.exportResults()}
                 >
                   <Download size={16} /> Скачать результаты
                 </button>
@@ -1370,7 +1406,12 @@ function App() {
               PoC · Симуляция без LLM <span className="footer-dot">·</span> Все
               суммы игровые
             </span>
-            <button onClick={() => setGuide(true)}>
+            <button
+              onClick={() => {
+                setGuide(true);
+                setMobile(false);
+              }}
+            >
               Сделано для больших идей <ArrowUpRight size={12} />
             </button>
           </footer>
@@ -1455,9 +1496,12 @@ function App() {
                 <div className="info-note">
                   <Bot size={18} />
                   <p>
-                    Это PoC без LLM: агенты работают по правилам симуляции. Все
-                    экраны подключены к общей сессии. Управление открыто для
-                    демонстрации, авторизация не подключена.
+                    Это PoC без LLM: агенты работают по правилам симуляции.{" "}
+                    {isLocalDemo
+                      ? "У каждого посетителя своя сессия в браузере."
+                      : "Все экраны подключены к общей сессии."}{" "}
+                    Управление открыто для демонстрации, авторизация не
+                    подключена.
                   </p>
                 </div>
                 <button
@@ -1672,8 +1716,9 @@ function App() {
                 <span className="eyebrow">WORKSHOP CONTROL</span>
                 <h2>Ритм задаёте вы.</h2>
                 <p className="modal-intro">
-                  Общая сессия для всех 10 команд. Изменения появятся на каждом
-                  подключённом экране.
+                  {isLocalDemo
+                    ? "Локальная сессия для 10 игровых команд. Результаты сохраняются в этой вкладке и не передаются другим посетителям."
+                    : "Общая сессия для всех 10 команд. Изменения появятся на каждом подключённом экране."}
                 </p>
                 <div className="session-summary">
                   <span>До завершения</span>
@@ -1709,7 +1754,7 @@ function App() {
                 </div>
                 <button
                   className="settings-row"
-                  onClick={() => window.location.assign("/api/export")}
+                  onClick={() => workshopClient.exportResults()}
                 >
                   <Download size={17} />
                   <div>
@@ -1750,7 +1795,10 @@ function App() {
                 <div className="settings-actions">
                   <button
                     className="button"
-                    onClick={() => setModal("settings")}
+                    onClick={() => {
+                      setModal("settings");
+                      setMobile(false);
+                    }}
                   >
                     Назад
                   </button>
@@ -1801,7 +1849,7 @@ function App() {
                 <div className="settings-actions">
                   <button
                     className="button"
-                    onClick={() => window.location.assign("/api/export")}
+                    onClick={() => workshopClient.exportResults()}
                   >
                     <Download size={16} /> Скачать CSV
                   </button>

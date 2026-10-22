@@ -254,3 +254,35 @@ export function act(s, a) {
     pushEvent(s, seller.id, "Sales", `выполнил заказ для ${t.name}`, 1200);
   } else throw Error("Неизвестное действие");
 }
+
+export function newSession(duration) {
+  if (![15, 30, 45, 60, 90].includes(duration))
+    throw new Error("Недопустимая длительность");
+  const state = seed(duration);
+  state.elapsed = 0;
+  state.round = 0;
+  state.status = "paused";
+  state.teams.forEach((team) => {
+    team.revenue = 0;
+    team.expenses = 0;
+    team.history = [0];
+    team.deals = 0;
+    team.agents.forEach((agent) => {
+      agent.tasks = 0;
+    });
+  });
+  state.events = [];
+  return state;
+}
+
+export function resultsCsv(state) {
+  const ranked = [...state.teams].sort((a, b) => profit(b) - profit(a));
+  const rows = [
+    "Место,Стол,Компания,Выручка,Расходы,Прибыль",
+    ...ranked.map(
+      (team, index) =>
+        `${index + 1},${team.id},${team.name},${team.revenue},${team.expenses},${profit(team)}`,
+    ),
+  ];
+  return "\ufeff" + rows.join("\n");
+}
