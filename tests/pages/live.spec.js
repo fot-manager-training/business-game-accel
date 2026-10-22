@@ -24,12 +24,15 @@ test("online map renders all pixel offices and sixty inspectable agents", async 
   await page
     .getByRole("button", { name: "На весь экран", exact: true })
     .click();
+  await expect(
+    page.getByRole("button", { name: "Выйти из полного экрана" }),
+  ).toBeVisible();
   await page
     .getByRole("button", { name: "Стол 10: Finance", exact: true })
     .click();
-  expect(await page.evaluate(() => Boolean(document.fullscreenElement))).toBe(
-    false,
-  );
+  await expect
+    .poll(() => page.evaluate(() => Boolean(document.fullscreenElement)))
+    .toBe(false);
   await expect(page.getByRole("dialog")).toContainText("Axiom Group");
   await expect(page.getByRole("dialog")).toContainText("Finance Agent");
   expect(errors).toEqual([]);
@@ -74,10 +77,16 @@ test("pixel office, map zoom, fullscreen, reduced motion and mobile canvas work"
   await page
     .getByRole("button", { name: "На весь экран", exact: true })
     .click();
+  await expect(
+    page.getByRole("button", { name: "Выйти из полного экрана" }),
+  ).toBeVisible();
   expect(await page.evaluate(() => Boolean(document.fullscreenElement))).toBe(
     true,
   );
   await page.getByRole("button", { name: "Выйти из полного экрана" }).click();
+  await expect(
+    page.getByRole("button", { name: "На весь экран", exact: true }),
+  ).toBeVisible();
   await page.getByRole("button", { name: "Обзор", exact: true }).click();
   await expect(page.locator(".pixel-office [data-pixel-sprite]")).toHaveCount(
     6,
