@@ -101,3 +101,47 @@ test("pausing a sales agent prevents its autonomous purchase", () => {
   tick(s, 5);
   assert.equal(s.trades.length, 0);
 });
+test("all ten teams generate real internal agent messages on each cycle", () => {
+  const state = seed();
+  state.interactions = [];
+  state.interactionCount = 0;
+  state.round = 0;
+  tick(state, 5);
+  const internal = state.interactions.filter((i) => i.kind === "internal");
+  assert.equal(internal.length, 10);
+  assert.equal(new Set(internal.map((i) => i.from.team)).size, 10);
+  assert.ok(internal.every((i) => i.from.agent === 0 && i.to.agent === 1));
+  assert.ok(
+    state.interactions.some(
+      (i) => i.kind === "request" && i.from.team !== i.to.team,
+    ),
+  );
+});
+test("paused agents do not send internal messages and pausing freezes communications", () => {
+  const state = seed();
+  state.interactions = [];
+  state.round = 0;
+  state.teams[0].agents[0].active = false;
+  tick(state, 5);
+  assert.ok(
+    !state.interactions.some((i) => i.kind === "internal" && i.from.team === 1),
+  );
+  act(state, { type: "toggle" });
+  const before = structuredClone(state);
+  tick(state, 5);
+  assert.deepEqual(state, before);
+});
+test("trade messages reference the exact settled financial transaction", () => {
+  const state = seed();
+  state.interactions = [];
+  act(state, { type: "trade", team: 1, seller: 2, service: "design" });
+  const trade = state.trades[0],
+    payment = state.interactions.find((i) => i.kind === "payment"),
+    delivery = state.interactions.find((i) => i.kind === "delivery");
+  assert.equal(payment.tradeId, trade.id);
+  assert.equal(payment.amount, trade.amount);
+  assert.deepEqual(payment.from, { team: 1, agent: 5 });
+  assert.deepEqual(payment.to, { team: 2, agent: 5 });
+  assert.equal(delivery.from.agent, 2);
+  assert.equal(delivery.tradeId, trade.id);
+});

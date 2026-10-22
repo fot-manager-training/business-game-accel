@@ -3,8 +3,14 @@ import fs from "node:fs/promises";
 const key = "zero-workshop-pages-v1";
 const snapshot = (page) =>
   page.evaluate((key) => JSON.parse(sessionStorage.getItem(key)), key);
+async function showOverview(page) {
+  if (page.viewportSize().width < 761)
+    await page.getByRole("button", { name: "Меню", exact: true }).click();
+  await page.getByRole("button", { name: "Обзор", exact: true }).click();
+}
 async function freshSession(page) {
   await page.goto("./");
+  await showOverview(page);
   if (page.viewportSize().width < 761)
     await page.getByRole("button", { name: "Меню", exact: true }).click();
   await page.getByRole("button", { name: "Настройки сессии" }).click();
@@ -31,12 +37,11 @@ test("public subpath loads all assets with no backend or external requests", asy
   });
   await page.goto("./");
   await expect(
-    page.getByRole("heading", { name: "Большие идеи. Автономный бизнес." }),
+    page.getByRole("heading", { name: "Агенты работают. Вы видите всё." }),
   ).toBeVisible();
   await expect(page.getByText("Публичное демо", { exact: true })).toBeVisible();
-  await expect(page.getByLabel("Выбор компании").locator("option")).toHaveCount(
-    10,
-  );
+  await expect(page.locator(".world-company")).toHaveCount(10);
+  await expect(page.locator(".world-agent")).toHaveCount(60);
   await page.evaluate(() => document.fonts.ready);
   expect(
     (await snapshot(page)).teams.every((team) => team.agents.length === 6),
@@ -60,6 +65,7 @@ test("strategy, investment and agent state persist across refresh", async ({
   await page.getByRole("button", { name: "Приостановить агента" }).click();
   await expect(page.locator(".agent-summary")).toContainText("На паузе");
   await page.reload();
+  await showOverview(page);
   await expect(page.locator(".office-stats")).toContainText("3 000 ₽");
   const company = (await snapshot(page)).teams[0];
   expect(company.strategy).toBe("growth");
@@ -137,7 +143,7 @@ test("mobile demo and visitors have independent sessions", async ({
   const other = await context.newPage();
   await other.goto(page.url());
   await expect(
-    other.getByRole("heading", { name: "Большие идеи. Автономный бизнес." }),
+    other.getByRole("heading", { name: "Агенты работают. Вы видите всё." }),
   ).toBeVisible();
   expect((await snapshot(page)).elapsed).toBe(0);
   expect((await snapshot(other)).elapsed).toBeGreaterThan(0);

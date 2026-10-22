@@ -34,4 +34,9 @@ const css = await (await get(new URL(style[1], site))).text();
 const font = css.match(/url\(["']?([^\s)"']+\.ttf)["']?\)/);
 if (!font) throw new Error("Local font missing from published stylesheet");
 await get(new URL(font[1], new URL(style[1], site)));
+const art = await get(new URL("chrome-sculpture.png", site));
+if (!(art.headers.get("content-type") || "").includes("image/"))
+  throw new Error("Chrome artwork is not served as an image");
+if ((await art.arrayBuffer()).byteLength < 10000)
+  throw new Error("Published chrome artwork is incomplete");
 console.log(`Public ZERO demo verified: ${site}`);

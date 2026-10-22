@@ -115,6 +115,33 @@ export function seed(duration = 60) {
         time: Date.now() - 80000,
       },
     ],
+    interactions: [
+      ...names.map((_, index) => ({
+        id: `demo-link-${index}`,
+        from: { team: index + 1, agent: 0 },
+        to: { team: index + 1, agent: 1 },
+        kind: "internal",
+        message: "CEO передал продуктовые приоритеты",
+        time: Date.now() - 1500,
+      })),
+      {
+        id: "demo-request",
+        from: { team: 1, agent: 0 },
+        to: { team: 2, agent: 4 },
+        kind: "request",
+        message: "Запрос на дизайн продукта",
+        time: Date.now() - 700,
+      },
+      {
+        id: "demo-offer",
+        from: { team: 2, agent: 4 },
+        to: { team: 1, agent: 0 },
+        kind: "offer",
+        message: "Предложение: 1 200 ₽",
+        time: Date.now() - 300,
+      },
+    ].sort((a, b) => b.time - a.time),
+    interactionCount: 12,
     trades: [],
   };
 }
@@ -130,6 +157,22 @@ export function pushEvent(s, team, role, text, amount) {
   });
   s.events = s.events.slice(0, 80);
 }
+export function recordInteraction(s, from, to, kind, message, extra = {}) {
+  const interaction = {
+    id: crypto.randomUUID(),
+    from,
+    to,
+    kind,
+    message,
+    time: Date.now(),
+    ...extra,
+  };
+  s.interactions = [interaction, ...(s.interactions || [])].slice(0, 160);
+  s.interactionCount =
+    (s.interactionCount ?? (s.interactions?.length || 1) - 1) + 1;
+  return interaction;
+}
+
 export function tick(s, seconds) {
   if (s.status !== "running") return;
   const remaining = s.duration * 60 - s.elapsed;
@@ -161,6 +204,25 @@ export function tick(s, seconds) {
       if (a.active) a.tasks++;
     });
     t.history = [...t.history.slice(-23), profit(t)];
+    const phase = (s.round - 1) % 6;
+    const destination = (phase + 1) % 6;
+    const messages = [
+      "Продуктовые приоритеты",
+      "Техническое задание",
+      "Продукт готов к запуску",
+      "Передача новых лидов",
+      "Сверка выручки",
+      "Финансовый отчёт",
+    ];
+    if (t.agents[phase].active && t.agents[destination].active) {
+      recordInteraction(
+        s,
+        { team: t.id, agent: phase },
+        { team: t.id, agent: destination },
+        "internal",
+        messages[phase],
+      );
+    }
   }
   const t = s.teams[(s.round - 1) % 10];
   const messages = [
@@ -172,6 +234,39 @@ export function tick(s, seconds) {
   ];
   const m = messages[(s.round + Math.floor(s.round / 10)) % messages.length];
   pushEvent(s, t.id, ...m);
+  // Expose the real negotiation stages leading to the next autonomous contract.
+  const nextBuyer = s.teams[(Math.ceil(s.round / 6) - 1) % 10];
+  const nextSeller = s.teams[(nextBuyer.id + 2) % 10];
+  const stage = s.round % 6;
+  const exchanges = {
+    1: [0, 4, "request", "Запрос на услугу", false],
+    2: [4, 0, "offer", "Предложение: 1 200 ₽", true],
+    3: [1, 1, "handoff", "Согласование задачи", false],
+    4: [2, 2, "handoff", "Передача результата на проверку", true],
+    5: [5, 5, "settlement", "Согласование оплаты", false],
+  };
+  if (
+    exchanges[stage] &&
+    nextBuyer.agents[0].active &&
+    nextBuyer.agents[4].active &&
+    nextSeller.agents[4].active
+  ) {
+    const [sourceAgent, targetAgent, kind, message, reverse] = exchanges[stage];
+    const source = reverse ? nextSeller : nextBuyer,
+      target = reverse ? nextBuyer : nextSeller;
+    if (
+      source.agents[sourceAgent].active &&
+      target.agents[targetAgent].active
+    ) {
+      recordInteraction(
+        s,
+        { team: source.id, agent: sourceAgent },
+        { team: target.id, agent: targetAgent },
+        kind,
+        message,
+      );
+    }
+  }
   // Autonomous inter-company contracts: one deal every 30 real seconds.
   if (s.round % 6 === 0) {
     const buyer = s.teams[(Math.floor(s.round / 6) - 1) % 10];
@@ -250,6 +345,24 @@ export function act(s, a) {
       amount: 1200,
       time: Date.now(),
     });
+    const trade = s.trades[0];
+    const serviceAgent = { analytics: 1, design: 2, marketing: 3 }[a.service];
+    recordInteraction(
+      s,
+      { team: seller.id, agent: serviceAgent },
+      { team: t.id, agent: 1 },
+      "delivery",
+      "Услуга выполнена",
+      { tradeId: trade.id, service: a.service },
+    );
+    recordInteraction(
+      s,
+      { team: t.id, agent: 5 },
+      { team: seller.id, agent: 5 },
+      "payment",
+      "Оплата подтверждена",
+      { tradeId: trade.id, amount: trade.amount },
+    );
     pushEvent(s, t.id, "CEO", `заказал услугу у ${seller.name}`, -1200);
     pushEvent(s, seller.id, "Sales", `выполнил заказ для ${t.name}`, 1200);
   } else throw Error("Неизвестное действие");
@@ -272,6 +385,8 @@ export function newSession(duration) {
     });
   });
   state.events = [];
+  state.interactions = [];
+  state.interactionCount = 0;
   return state;
 }
 

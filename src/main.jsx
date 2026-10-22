@@ -46,6 +46,9 @@ import {
   SlidersHorizontal,
 } from "lucide-react";
 import "./styles.css";
+import "./editorial.css";
+import { PixelPerson as Person, PixelOffice as Office } from "./PixelArt.jsx";
+import LiveWorld from "./LiveWorld.jsx";
 import { workshopClient, isLocalDemo } from "./workshop-client.js";
 const money = (n) => new Intl.NumberFormat("ru-RU").format(Math.round(n));
 const rub = (n) => `${money(n)} ₽`;
@@ -75,291 +78,6 @@ const strategies = {
     icon: Target,
   },
 };
-function Person({ color = "#b9f48b", variant = 0, ...props }) {
-  return (
-    <g {...props} className="person">
-      <ellipse cx="0" cy="9" rx="21" ry="8" fill="#080e0d" opacity=".26" />
-      <path
-        d="M-12-16v20q2 6 9 0l3-20M4-16v20q3 6 10 0l-2-20"
-        stroke="#354046"
-        strokeWidth="9"
-        strokeLinecap="round"
-      />
-      <path
-        d="M-17 4l-6 3q-1 6 14 5l7-3-1-5M7 4l-2 5q6 6 17 1l-1-4-8-2"
-        fill="#d7ded5"
-      />
-      <path
-        d="M-15-57q-9 4-10 23l1 10q5 6 8-2l3-16M15-57q9 3 11 23l-1 9q-5 6-8-2l-2-17"
-        stroke="#e0bba1"
-        strokeWidth="8"
-        strokeLinecap="round"
-      />
-      <path d="M-15-58q14-10 30 0l5 33q-17 13-39 0z" fill={color} />
-      <path d="M-13-55l-3 27q12 8 27 1l3-28" fill="url(#bodyShade)" />
-      <path d="M-4-63v9q5 5 10 0v-9" fill="#d5ac91" />
-      <rect x="-15" y="-88" width="32" height="32" rx="13" fill="#e9c7aa" />
-      <path
-        d={
-          variant % 3 === 0
-            ? "M-16-69v-15q0-14 18-13 20 0 15 23l-6-6-3-8-13 5-3 14"
-            : variant % 3 === 1
-              ? "M-16-72q-7-26 17-26 20 0 17 23l-8-9-12 2-10 10"
-              : "M-16-70v-16q3-14 20-10 20 2 14 22l-10-13-15 4-5 14"
-        }
-        fill={["#323735", "#b3a490", "#52535e"][variant % 3]}
-      />
-      {variant % 2 === 0 ? (
-        <>
-          <rect x="-13" y="-76" width="26" height="9" rx="4" fill="#29393b" />
-          <path d="M-9-73h6" stroke="#a5d8c9" strokeWidth="2" />
-        </>
-      ) : (
-        <>
-          <circle cx="-6" cy="-73" r="1.5" fill="#333" />
-          <circle cx="7" cy="-73" r="1.5" fill="#333" />
-          <path d="M-2-65q4 2 7-1" stroke="#a47f6e" fill="none" />
-        </>
-      )}
-      <rect
-        x="9"
-        y="-49"
-        width="6"
-        height="8"
-        rx="1"
-        fill="#fff"
-        opacity=".65"
-      />
-    </g>
-  );
-}
-function Office({ team, onAgent, status }) {
-  const spots = [
-    [416, 139],
-    [245, 206],
-    [555, 213],
-    [355, 287],
-    [492, 316],
-    [655, 282],
-  ];
-  return (
-    <div className="office-scene">
-      <div className="scene-grain" />
-      <svg
-        viewBox="0 0 800 410"
-        role="img"
-        aria-label={`Виртуальный офис ${team.name}, шесть AI-агентов`}
-      >
-        <defs>
-          <linearGradient id="floor" x1="0" y1="0" x2="1" y2="1">
-            <stop stopColor="#61756d" stopOpacity=".32" />
-            <stop offset="1" stopColor="#25312e" stopOpacity=".3" />
-          </linearGradient>
-          <linearGradient id="desk">
-            <stop stopColor="#8b9b90" />
-            <stop offset="1" stopColor="#455650" />
-          </linearGradient>
-          <linearGradient id="bodyShade">
-            <stop stopColor="#fff" stopOpacity=".12" />
-            <stop offset="1" stopColor="#000" stopOpacity=".18" />
-          </linearGradient>
-          <linearGradient id="glass" x1="0" y1="0" x2="1" y2="1">
-            <stop stopColor="#b5eccb" stopOpacity=".16" />
-            <stop offset="1" stopColor="#b5eccb" stopOpacity=".01" />
-          </linearGradient>
-          <filter id="glow">
-            <feGaussianBlur stdDeviation="6" />
-          </filter>
-          <pattern
-            id="grid"
-            width="45"
-            height="25"
-            patternUnits="userSpaceOnUse"
-            patternTransform="skewY(-28)"
-          >
-            <path
-              d="M45 0H0V25"
-              stroke="#9db7aa"
-              strokeOpacity=".06"
-              fill="none"
-            />
-          </pattern>
-        </defs>
-        <ellipse
-          cx="410"
-          cy="327"
-          rx="280"
-          ry="61"
-          fill="#000"
-          opacity=".2"
-          filter="url(#glow)"
-        />
-        <path
-          d="M95 205L402 46 726 219 420 389z"
-          fill="url(#floor)"
-          stroke="#9bb9a2"
-          strokeOpacity=".22"
-        />
-        <path d="M95 205v12l325 185 306-169v-14L420 389z" fill="#2a3630" />
-        <path
-          d="M95 205l325 184 306-170"
-          fill="none"
-          stroke="#a1e0aa"
-          strokeOpacity=".3"
-        />
-        <path d="M100 207L402 51 721 220 420 384z" fill="url(#grid)" />
-        <path
-          d="M97 205V103L401-54V47"
-          fill="url(#glass)"
-          stroke="#b4e1c4"
-          strokeOpacity=".07"
-        />
-        <path
-          d="M402 47V-53L726 119v100"
-          fill="url(#glass)"
-          stroke="#b4e1c4"
-          strokeOpacity=".07"
-        />
-        <path
-          d="M123 189V116M186 154V82M251 122V48M315 87V14M471 83V11M537 118V47M603 153V82M669 188V117"
-          stroke="#b2dfbd"
-          strokeOpacity=".08"
-        />
-        <g opacity=".7">
-          <path d="M146 225l25 14 25-14-24-14z" fill="#637b62" />
-          <path d="M146 225v22l25 14v-22M196 225v22l-25 14" fill="#3e5041" />
-          <path
-            d="M172 219v-46M171 195q-32-15-18-30 25 8 18 30M173 204q29-10 24-28-26 2-24 28M172 181q20-21 6-36-20 15-6 36"
-            fill="#7b9c6d"
-            stroke="#7b9c6d"
-            strokeWidth="4"
-          />
-        </g>
-        {[
-          [298, 172],
-          [497, 185],
-          [408, 267],
-          [589, 275],
-        ].map(([x, y], i) => (
-          <g key={i}>
-            <path
-              d={`M${x - 34} ${y + 10}v36M${x + 35} ${y + 8}v37`}
-              stroke="#53625a"
-              strokeWidth="5"
-            />
-            <path
-              d={`M${x - 55} ${y - 4}l51-28 67 36-51 28z`}
-              fill="url(#desk)"
-              stroke="#8f9f92"
-              strokeOpacity=".3"
-            />
-            <path d={`M${x - 55} ${y - 4}v6l67 36v-6l-67-36`} fill="#34463c" />
-            <path
-              d={`M${x - 10} ${y - 19}v-31l31 17v31z`}
-              fill="#26352f"
-              stroke="#9dbca6"
-              strokeWidth="1.5"
-            />
-            <path
-              d={`M${x - 6} ${y - 23}v-21l23 12v22z`}
-              fill="#a2d6b1"
-              opacity=".48"
-            />
-            <path
-              d={`M${x + 1} ${y - 33}l11 6M${x + 1} ${y - 27}l7 4`}
-              stroke="#c9f9cf"
-              strokeWidth="1.5"
-            />
-            <path
-              d={`M${x - 6} ${y + 2}l16-9 21 12-15 9z`}
-              fill="#a2afa2"
-              opacity=".6"
-            />
-            <ellipse cx={x + 40} cy={y + 7} rx="4" ry="2" fill="#c6d4be" />
-            <path d={`M${x + 36} ${y + 7}v-10q4-4 8 0v10`} fill="#b7c6ae" />
-          </g>
-        ))}
-        {spots.map(([x, y], i) => (
-          <g
-            key={i}
-            onClick={() => onAgent(i)}
-            className={`scene-agent ${!team.agents[i].active ? "agent-paused" : ""}`}
-            tabIndex="0"
-            role="button"
-            aria-label={`Открыть агента ${team.agents[i].role}`}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") onAgent(i);
-            }}
-          >
-            <Person
-              transform={`translate(${x} ${y}) scale(.72)`}
-              color={
-                [
-                  "#cadcbb",
-                  "#afc5dd",
-                  "#d6c7af",
-                  "#c8b9d9",
-                  "#b4d5c2",
-                  "#d5d6bb",
-                ][i]
-              }
-              variant={i}
-            />
-            <g transform={`translate(${x + 12} ${y - 91})`}>
-              <rect
-                x="-26"
-                width="63"
-                height="20"
-                rx="6"
-                fill="#23302b"
-                stroke="#829d84"
-                strokeOpacity=".3"
-              />
-              <circle
-                cx="-17"
-                cy="10"
-                r="2.5"
-                fill={team.agents[i].active ? "#b6f389" : "#e1bd7e"}
-              />
-              <text
-                x="-9"
-                y="13"
-                fill="#d0d9cf"
-                fontSize="8"
-                fontFamily="Arial"
-              >
-                {team.agents[i].role}
-              </text>
-            </g>
-          </g>
-        ))}
-        <path
-          d="M225 293l76 42M545 352l79-43"
-          stroke="#b6f389"
-          strokeOpacity=".3"
-          strokeWidth="2"
-          strokeDasharray="4 7"
-        />
-        <circle cx="420" cy="389" r="3" fill="#b6f389" />
-        <path d="M402 46l18-9 17 9-18 10z" fill="#c9efaa" opacity=".45" />
-      </svg>
-      <div className="office-location">
-        <span className="tiny-dot" />{" "}
-        {status === "running"
-          ? "Автономный режим"
-          : status === "paused"
-            ? "Симуляция на паузе"
-            : "Сессия завершена"}{" "}
-        <span>
-          {team.agents.filter((a) => a.active).length} агентов · A2A protocol
-        </span>
-      </div>
-      <div className="scene-corner">
-        ISOMETRIC VIEW <span>{String(team.id).padStart(2, "0")} / 10</span>
-      </div>
-    </div>
-  );
-}
 function Sparkline({ values, color = "#b8f38c", large = false }) {
   const w = large ? 520 : 100,
     h = large ? 140 : 32;
@@ -404,7 +122,7 @@ function Sparkline({ values, color = "#b8f38c", large = false }) {
 function App() {
   const [state, setState] = useState(null),
     [connected, setConnected] = useState(false),
-    [page, setPage] = useState("overview"),
+    [page, setPage] = useState("live"),
     [selected, setSelected] = useState(1),
     [modal, setModal] = useState(null),
     [agent, setAgent] = useState(0),
@@ -645,6 +363,7 @@ function App() {
         </div>
         <div className="nav-caption">РАБОЧЕЕ ПРОСТРАНСТВО</div>
         <nav>
+          {nav("live", "Онлайн", Radio)}
           {nav("overview", "Обзор", LayoutDashboard)}
           {nav("companies", "Компании", Building2, "10")}
           {nav("network", "A2A-маркет", Network)}
@@ -728,6 +447,7 @@ function App() {
             <strong>
               {
                 {
+                  live: "Онлайн",
                   overview: "Обзор",
                   companies: "Компании",
                   network: "A2A-маркет",
@@ -760,7 +480,9 @@ function App() {
           </div>
         </header>
         <main>
-          <div className="page-heading">
+          <div
+            className={`page-heading ${page === "live" ? "page-heading-live" : ""}`}
+          >
             <div>
               <div className="eyebrow">
                 <span className="eyebrow-line" /> ZERO HUMAN COMPANY{" "}
@@ -769,6 +491,12 @@ function App() {
               <h1>
                 {
                   {
+                    live: (
+                      <>
+                        Агенты работают. <br />
+                        Вы видите всё.
+                      </>
+                    ),
                     overview: "Большие идеи. Автономный бизнес.",
                     companies: "10 столов. 10 новых компаний.",
                     network: "Компании работают вместе.",
@@ -782,6 +510,7 @@ function App() {
               <p>
                 {
                   {
+                    live: "10 компаний, 60 агентов и все связи между ними — на одной карте.",
                     overview:
                       "Создавайте компанию, управляйте агентами и превращайте решения в прибыль.",
                     companies:
@@ -809,6 +538,37 @@ function App() {
                   : "Воркшоп завершён"}
               <ChevronDown size={14} />
             </button>
+            {page === "live" && (
+              <div className="hero-art">
+                <img
+                  src={import.meta.env.BASE_URL + "chrome-sculpture.png"}
+                  alt="Абстрактная хромированная скульптура"
+                />
+                <div className="hero-art-label">
+                  <span>EXPERIMENT 001</span>
+                  <strong>
+                    10 компаний.
+                    <br />
+                    60 агентов.
+                    <br />
+                    Новая экономика.
+                  </strong>
+                  <ArrowUpRight size={22} />
+                </div>
+                <div className="hero-cast">
+                  {[0, 1, 2, 3, 4].map((i) => (
+                    <svg key={i} viewBox="-35 -85 70 100" aria-hidden="true">
+                      <Person variant={i} />
+                    </svg>
+                  ))}
+                  <span>
+                    Zero humans.
+                    <br />
+                    <b>All possibilities.</b>
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
           {isLocalDemo && (
             <div className="demo-notice">
@@ -827,6 +587,23 @@ function App() {
                 Как играть <ArrowUpRight size={13} />
               </button>
             </div>
+          )}
+          {page === "live" && (
+            <LiveWorld
+              state={state}
+              now={now}
+              time={time}
+              busy={busy}
+              onToggle={() => action({ type: "toggle" })}
+              onCompany={(id) => {
+                setSelected(id);
+                setPage("overview");
+              }}
+              onAgent={(id, index) => {
+                setSelected(id);
+                openAgent(index);
+              }}
+            />
           )}
           {page === "overview" && (
             <>
@@ -967,6 +744,9 @@ function App() {
                     team={team}
                     onAgent={openAgent}
                     status={state.status}
+                    interactions={state.interactions || []}
+                    now={now}
+                    pausedAt={state.updatedAt}
                   />
                   <div className="office-stats">
                     <div>
@@ -995,7 +775,7 @@ function App() {
                     <div className="avatar-stack">
                       {team.agents.slice(0, 4).map((a, i) => (
                         <div key={i} className="mini-avatar">
-                          <svg viewBox="-25 -100 50 70">
+                          <svg viewBox="-25 -85 50 65">
                             <Person variant={i} />
                           </svg>
                         </div>
@@ -1571,7 +1351,7 @@ function App() {
                   {team.agents.map((a, i) => (
                     <button key={i} onClick={() => openAgent(i)}>
                       <div className="agent-head">
-                        <svg viewBox="-25 -100 50 65">
+                        <svg viewBox="-25 -85 50 65">
                           <Person variant={i} />
                         </svg>
                       </div>

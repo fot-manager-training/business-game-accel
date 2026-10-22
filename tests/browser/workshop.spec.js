@@ -1,11 +1,18 @@
 import { test, expect } from "@playwright/test";
+async function gotoOverview(page) {
+  await page.goto("/");
+  if (page.viewportSize().width < 761)
+    await page.getByRole("button", { name: "Меню", exact: true }).click();
+  await page.getByRole("button", { name: "Обзор", exact: true }).click();
+}
+
 test.beforeEach(async ({ request }) => {
   await request.post("/api/reset", { data: { duration: 60 } });
 });
 test("dashboard, ten companies and team selection", async ({ page }) => {
   const errors = [];
   page.on("pageerror", (e) => errors.push(e.message));
-  await page.goto("/");
+  await gotoOverview(page);
   await expect(
     page.getByRole("heading", { name: "Большие идеи. Автономный бизнес." }),
   ).toBeVisible();
@@ -30,9 +37,9 @@ test("strategy, expense accounting and agent pause sync between clients", async 
   context,
   request,
 }) => {
-  await page.goto("/");
+  await gotoOverview(page);
   const second = await context.newPage();
-  await second.goto("/");
+  await gotoOverview(second);
   await page.getByRole("button", { name: "Управлять компанией" }).click();
   await page.getByRole("button", { name: "Рост Больше продаж" }).click();
   await page.getByRole("button", { name: "3 000 ₽" }).click();
@@ -53,7 +60,7 @@ test("A2A service updates both companies and trade history", async ({
   page,
   request,
 }) => {
-  await page.goto("/");
+  await gotoOverview(page);
   await page.getByRole("button", { name: "A2A-маркет", exact: true }).click();
   await page
     .locator(".market-card")
@@ -72,7 +79,7 @@ test("session controls, final ranking, export and reset", async ({
   page,
   request,
 }) => {
-  await page.goto("/");
+  await gotoOverview(page);
   await page.getByRole("button", { name: "Продолжить", exact: true }).click();
   await expect(
     page.getByRole("button", { name: "Воркшоп идёт" }),
@@ -103,7 +110,7 @@ test("mobile navigation, dialogs, ranking and market fit screen", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto("/");
+  await gotoOverview(page);
   await expect(
     page.getByRole("heading", { name: "Большие идеи. Автономный бизнес." }),
   ).toBeVisible();
@@ -132,4 +139,31 @@ test("mobile navigation, dialogs, ranking and market fit screen", async ({
       () => document.documentElement.scrollWidth <= innerWidth,
     ),
   ).toBe(true);
+});
+test("online map broadcasts actual agent transactions to all connected screens", async ({
+  page,
+  context,
+  request,
+}) => {
+  await page.goto("/");
+  await expect(page.locator(".world-agent")).toHaveCount(60);
+  const other = await context.newPage();
+  await other.goto("/");
+  await expect(other.locator(".world-company")).toHaveCount(10);
+  const response = await request.post("/api/action", {
+    data: { type: "trade", team: 1, seller: 2, service: "analytics" },
+  });
+  expect(response.ok()).toBe(true);
+  for (const screen of [page, other]) {
+    await expect(screen.locator(".stream-event")).toHaveCount(2);
+    await expect(screen.locator(".stream-events")).toContainText(
+      "Оплата подтверждена",
+    );
+    await expect(screen.locator(".world-wire")).toHaveCount(2);
+  }
+  const state = await (await request.get("/api/state")).json();
+  expect(state.interactions.find((i) => i.kind === "payment").tradeId).toBe(
+    state.trades[0].id,
+  );
+  await other.close();
 });

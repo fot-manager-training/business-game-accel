@@ -56,7 +56,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
-      - name: Verify published HTML, JavaScript, CSS and font
+      - name: Verify published app, font and chrome artwork
         env:
           PAGES_URL: ${{ steps.deployment.outputs.page_url }}
         run: node scripts/check-pages.mjs
