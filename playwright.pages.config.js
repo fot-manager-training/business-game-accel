@@ -3,7 +3,7 @@ const base = process.env.PAGES_BASE_PATH || "/business-game-accel/";
 export default defineConfig({
   testDir: "./tests/pages",
   workers: 1,
-  reporter: "list",
+  reporter: process.env.CI ? [["list"], ["github"]] : "list",
   use: {
     baseURL: `http://127.0.0.1:4173${base}`,
     launchOptions: {
