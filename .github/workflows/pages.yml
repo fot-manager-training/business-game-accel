@@ -10,7 +10,7 @@ permissions:
 
 concurrency:
   group: github-pages
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -30,7 +30,17 @@ jobs:
       - run: npm test
       - run: npm run build
       - run: npm run build:pages
-      - run: npx playwright install --with-deps chromium
+      - name: Prepare browser for checks
+        timeout-minutes: 3
+        shell: bash
+        run: |
+          browser_path="$(command -v google-chrome || command -v chromium || true)"
+          if [ -n "$browser_path" ]; then
+            echo "PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=$browser_path" >> "$GITHUB_ENV"
+            "$browser_path" --version
+          else
+            npx playwright install --with-deps --only-shell chromium
+          fi
       - run: npm run test:e2e
       - run: npm run test:pages
       - uses: actions/configure-pages@v5
