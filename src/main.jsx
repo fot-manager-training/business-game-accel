@@ -36,6 +36,7 @@ import {
   Zap,
   Globe,
   PanelLeftClose,
+  PanelLeftOpen,
   Menu,
   ExternalLink,
   ArrowLeft,
@@ -132,8 +133,22 @@ function App() {
     [service, setService] = useState("analytics"),
     [busy, setBusy] = useState(false),
     [mobile, setMobile] = useState(false),
+    [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+      try {
+        return localStorage.getItem("zero-sidebar-collapsed") === "true";
+      } catch {
+        return false;
+      }
+    }),
     [guide, setGuide] = useState(false),
     [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    try {
+      localStorage.setItem("zero-sidebar-collapsed", String(sidebarCollapsed));
+    } catch {
+      // The menu still works when browser storage is unavailable.
+    }
+  }, [sidebarCollapsed]);
   useEffect(() => {
     const unsubscribe = workshopClient.subscribe(setState, setConnected);
     const timer = setInterval(() => setNow(Date.now()), 1000);
@@ -322,7 +337,7 @@ function App() {
     </button>
   );
   return (
-    <div className="app">
+    <div className={`app ${sidebarCollapsed ? "sidebar-collapsed" : ""}`}>
       {mobile && (
         <button
           className="mobile-scrim"
@@ -331,9 +346,21 @@ function App() {
         />
       )}
       <aside
+        id="workspace-sidebar"
+        aria-label="Боковая панель"
         inert={!!modal || guide}
         className={`sidebar ${mobile ? "is-open" : ""}`}
       >
+        <button
+          className="sidebar-mobile-close icon-button"
+          aria-label="Закрыть боковую панель"
+          onClick={() => {
+            setMobile(false);
+            document.querySelector(".mobile-toggle")?.focus();
+          }}
+        >
+          <X size={17} />
+        </button>
         <a
           className="brand"
           href="#"
@@ -436,9 +463,33 @@ function App() {
         <header className="topbar">
           <div className="breadcrumb">
             <button
+              className="sidebar-toggle icon-button"
+              onClick={() => setSidebarCollapsed((value) => !value)}
+              aria-label={
+                sidebarCollapsed
+                  ? "Показать боковую панель"
+                  : "Скрыть боковую панель"
+              }
+              title={
+                sidebarCollapsed
+                  ? "Показать боковую панель"
+                  : "Скрыть боковую панель"
+              }
+              aria-expanded={!sidebarCollapsed}
+              aria-controls="workspace-sidebar"
+            >
+              {sidebarCollapsed ? (
+                <PanelLeftOpen size={18} />
+              ) : (
+                <PanelLeftClose size={18} />
+              )}
+            </button>
+            <button
               className="mobile-toggle"
               onClick={() => setMobile(!mobile)}
               aria-label="Меню"
+              aria-expanded={mobile}
+              aria-controls="workspace-sidebar"
             >
               <Menu size={20} />
             </button>

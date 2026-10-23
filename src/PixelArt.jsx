@@ -1,5 +1,7 @@
 import React from "react";
 import { speechForCompany } from "./agent-dialogue.js";
+import { companyPoses } from "./agent-motion.js";
+import { useAgentMotion } from "./use-agent-motion.js";
 const outfits = [
   ["#7332db", "#48209e", "#5b22bb", "#191b3d"],
   ["#737e91", "#475366", "#697589", "#1e347d"],
@@ -41,8 +43,16 @@ export const PixelPerson = React.memo(function PixelPerson({
       data-pixel-sprite="true"
     >
       <ellipse cx="0" cy="10" rx="22" ry="4" fill="#d7dce2" />
-      <rect x="-13" y="-18" width="14" height="26" fill={pants} />
       <rect
+        className="pixel-leg-left"
+        x="-13"
+        y="-18"
+        width="14"
+        height="26"
+        fill={pants}
+      />
+      <rect
+        className="pixel-leg-right"
         x="1"
         y="-18"
         width="17"
@@ -178,6 +188,7 @@ export function PixelOffice({
   now = Date.now(),
   pausedAt,
 }) {
+  const motion = useAgentMotion(status);
   const spots = [
       [190, 190],
       [400, 190],
@@ -186,7 +197,8 @@ export function PixelOffice({
       [400, 355],
       [610, 355],
     ],
-    speech = speechForCompany(team, interactions, now, status, pausedAt);
+    speech = speechForCompany(team, interactions, now, status, pausedAt),
+    poses = companyPoses(team, spots, motion.elapsed, motion.reducedMotion);
   return (
     <div
       className={`office-scene pixel-office ${status === "running" ? "is-running" : "is-paused"}`}
@@ -233,12 +245,14 @@ export function PixelOffice({
             </g>
           ))}
         </g>
-        {spots.map(([x, y], i) => (
+        {poses.map(({ x, y, moving, partner }, i) => (
           <g
             key={i}
             role="button"
             tabIndex="0"
             className={`scene-agent ${!team.agents[i].active ? "agent-paused" : ""}`}
+            data-moving={status === "running" && moving}
+            data-partner={partner}
             aria-label={`Открыть агента ${team.agents[i].role}`}
             onClick={() => onAgent(i)}
             onKeyDown={(e) => {
@@ -249,13 +263,7 @@ export function PixelOffice({
             }}
           >
             <g
-              className={
-                speech?.agent === i &&
-                speech.mode === "intent" &&
-                status === "running"
-                  ? "agent-walk"
-                  : ""
-              }
+              className={moving && status === "running" ? "agent-running" : ""}
             >
               <PixelPerson
                 transform={`translate(${x} ${y}) scale(.95)`}
@@ -285,8 +293,8 @@ export function PixelOffice({
         {speech && (
           <SpeechBubble
             speech={speech}
-            x={spots[speech.agent][0]}
-            y={spots[speech.agent][1] - 151}
+            x={poses[speech.agent].x}
+            y={poses[speech.agent].y - 151}
             width={200}
           />
         )}

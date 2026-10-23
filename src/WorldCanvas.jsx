@@ -1,20 +1,23 @@
 import React from "react";
 import { PixelPerson, PixelDesk, SpeechBubble } from "./PixelArt.jsx";
 import { speechForCompany } from "./agent-dialogue.js";
+import { companyPoses } from "./agent-motion.js";
+import { useAgentMotion } from "./use-agent-motion.js";
 const positions = Array.from({ length: 10 }, (_, i) => ({
   x: 26 + (i % 5) * 244,
   y: i < 5 ? 28 : 428,
 }));
-const point = (endpoint) => {
+const point = (endpoint, poses) => {
   const p = positions[endpoint.team - 1];
+  const agent = poses[endpoint.team - 1][endpoint.agent];
   return {
-    x: p.x + 43 + (endpoint.agent % 3) * 62,
-    y: p.y + 143 + Math.floor(endpoint.agent / 3) * 130 - 25,
+    x: p.x + agent.x,
+    y: p.y + agent.y - 25,
   };
 };
-function route(interaction, index) {
-  const a = point(interaction.from),
-    b = point(interaction.to);
+function route(interaction, index, poses) {
+  const a = point(interaction.from, poses),
+    b = point(interaction.to, poses);
   if (interaction.from.team === interaction.to.team)
     return `M ${a.x} ${a.y} H ${(a.x + b.x) / 2} V ${b.y} H ${b.x}`;
   const source = positions[interaction.from.team - 1],
@@ -33,6 +36,14 @@ export default function WorldCanvas({
   reducedMotion,
   inspectAgent,
 }) {
+  const motion = useAgentMotion(state.status);
+  const spots = Array.from({ length: 6 }, (_, i) => [
+    43 + (i % 3) * 62,
+    143 + Math.floor(i / 3) * 130,
+  ]);
+  const poses = state.teams.map((team) =>
+    companyPoses(team, spots, motion.elapsed, motion.reducedMotion),
+  );
   const speeches = state.teams.map((team) =>
     speechForCompany(
       team,
@@ -183,7 +194,7 @@ export default function WorldCanvas({
       })}
       <g className="world-wires" aria-hidden="true">
         {shownWires.map((link, index) => {
-          const path = route(link, index),
+          const path = route(link, index, poses),
             isRecent = running && now - link.time < 7500,
             isFocused = link.id === focus,
             internal = link.from.team === link.to.team,
@@ -243,12 +254,15 @@ export default function WorldCanvas({
             className={filter && filter !== team.id ? "dimmed" : ""}
           >
             {team.agents.map((agent, i) => {
-              const x = p.x + 43 + (i % 3) * 62,
-                y = p.y + 143 + Math.floor(i / 3) * 130;
+              const pose = poses[index][i],
+                x = p.x + pose.x,
+                y = p.y + pose.y;
               return (
                 <g
                   key={i}
                   className={`world-agent ${agent.active ? "" : "agent-paused"} ${speech?.agent === i ? "agent-talking" : ""}`}
+                  data-moving={running && pose.moving}
+                  data-partner={pose.partner}
                   role="button"
                   tabIndex="0"
                   aria-label={`Стол ${String(team.id).padStart(2, "0")}: ${agent.role}`}
@@ -267,16 +281,7 @@ export default function WorldCanvas({
                     height="72"
                     fill="transparent"
                   />
-                  <g
-                    className={
-                      speech?.agent === i &&
-                      speech.mode === "intent" &&
-                      running &&
-                      !reducedMotion
-                        ? "agent-walk"
-                        : ""
-                    }
-                  >
+                  <g className={running && pose.moving ? "agent-running" : ""}>
                     <PixelPerson
                       transform={`translate(${x} ${y}) scale(.60)`}
                       variant={i}
@@ -309,8 +314,9 @@ export default function WorldCanvas({
       {speeches.map((speech, index) => {
         if (!speech) return null;
         const p = positions[index],
-          x = p.x + 43 + (speech.agent % 3) * 62,
-          y = p.y + 143 + Math.floor(speech.agent / 3) * 130;
+          pose = poses[index][speech.agent],
+          x = p.x + pose.x,
+          y = p.y + pose.y;
         return (
           <g
             key={index}
